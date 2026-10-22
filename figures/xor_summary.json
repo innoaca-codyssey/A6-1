@@ -1,0 +1,66 @@
+{
+  "Zero": {
+    "epoch0": {
+      "loss": 0.6931471805599453,
+      "accuracy": 0.5
+    },
+    "epoch50": {
+      "loss": 0.6931471805599453,
+      "accuracy": 0.5
+    },
+    "epoch100": {
+      "loss": 0.6931471805599453,
+      "accuracy": 0.5
+    },
+    "zero_failure": true,
+    "he_success_target": false
+  },
+  "Random": {
+    "epoch0": {
+      "loss": 1.1072288452609964,
+      "accuracy": 0.25
+    },
+    "epoch50": {
+      "loss": 0.21842819120757875,
+      "accuracy": 1.0
+    },
+    "epoch100": {
+      "loss": 0.04411794227298939,
+      "accuracy": 1.0
+    },
+    "zero_failure": false,
+    "he_success_target": false
+  },
+  "He": {
+    "epoch0": {
+      "loss": 0.7576402279642691,
+      "accuracy": 0.25
+    },
+    "epoch50": {
+      "loss": 0.1067138092547116,
+      "accuracy": 1.0
+    },
+    "epoch100": {
+      "loss": 0.01828718645030869,
+      "accuracy": 1.0
+    },
+    "zero_failure": false,
+    "he_success_target": true
+  },
+  "Xavier": {
+    "epoch0": {
+      "loss": 0.7005702024044944,
+      "accuracy": 0.25
+    },
+    "epoch50": {
+      "loss": 0.06072893570119904,
+      "accuracy": 1.0
+    },
+    "epoch100": {
+      "loss": 0.01291698772799639,
+      "accuracy": 1.0
+    },
+    "zero_failure": false,
+    "he_success_target": false
+  }
+}

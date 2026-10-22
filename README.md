@@ -122,3 +122,34 @@ OK
 ```
 
 log의 작은 양수, exp의 범위 초과, 0지수, 극단 로짓의 손실, 공유 그래프, 긴 그래프와 Dropout 평가 모드를 확인했습니다. 아직 학습 성공 결과를 대신하는 검사는 아닙니다.
+
+## 초기화별 XOR 학습
+
+동일한 2-16-1 ReLU 구조, 층별 seed42/43, Adam lr0.05, 전체4개 샘플을 사용해100회 갱신했습니다. Random은 표준정규, He는 표준편차 sqrt(2/fan_in), Xavier는 sqrt(2/(fan_in+fan_out))입니다. Xavier 비교도 함께 수행했습니다.
+
+```bash
+python train.py xor --include-xavier
+```
+
+| 초기화 | 초기 Loss | 50 Epoch Loss | 100 Epoch Loss | 100 Epoch 정확도 |
+|---|---:|---:|---:|---:|
+| Zero | 0.693147 | 0.693147 | 0.693147 | 50% |
+| Random | 1.107229 | 0.218428 | 0.044118 | 100% |
+| He | 0.757640 | 0.106714 | 0.018287 | 100% |
+| Xavier | 0.700570 | 0.060729 | 0.012917 | 100% |
+
+![초기화 비교](figures/xor_loss.png)
+
+Zero는 모든 은닉 가중치가 같고 ReLU의0에서 미분을0으로 정의해 대칭을 깨지 못했습니다. 균형 XOR에서는 출력 bias의 평균 기울기도0이어서50회 후 Loss가 그대로였습니다. He는100회에서 Loss0.018287/정확도100%로 기준을 충족했습니다. 이 작은 문제에서는 Xavier가 더 낮은 Loss를 냈으므로 He가 모든 구조에서 항상 더 낫다고 해석하지 않습니다.
+
+## 직접 데이터 로더
+
+`engine/data.py`는 MNIST 원본 gzip의 MD5, IDX의 big-endian 헤더/개수/28x28 크기/라벨 범위를 확인하고 NumPy 배열로 변환합니다. 픽셀은255로 나누며 배치를 직접 생성합니다. [원본 미러와 체크섬 참고](https://github.com/pytorch/vision/blob/main/torchvision/datasets/mnist.py)는 배포 위치 확인에만 사용했습니다. 엔진/로더에 해당 프레임워크를 import하지 않습니다.
+
+```text
+$ python -m unittest discover -s tests -v
+Ran 27 tests in 0.072s
+OK
+```
+
+추가3개 검사는 IDX의 잘못된 헤더/길이/라벨과 정규화, 배치 재현성/누락/마지막 작은 배치를 확인합니다. MNIST 실학습과 정규화 비교 결과는 별도로 기록합니다.
