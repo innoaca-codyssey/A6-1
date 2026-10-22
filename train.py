@@ -52,7 +52,7 @@ def accuracy_multiclass(logits, y):
 
 def save_csv(path, rows, fieldnames):
     with open(path, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
         w.writeheader()
         for r in rows:
             w.writerow(r)
@@ -250,19 +250,27 @@ def cmd_mnist(args):
         json.dump(
             {"config": vars(args), "history": hist}, f, ensure_ascii=False, indent=2
         )
-    plt.figure()
-    plt.plot(
-        [r["epoch"] for r in hist], [r["train_acc"] for r in hist], label="train_acc"
-    )
-    plt.plot([r["epoch"] for r in hist], [r["val_acc"] for r in hist], label="val_acc")
-    plt.plot(
-        [r["epoch"] for r in hist], [r["test_acc"] for r in hist], label="test_acc"
-    )
-    plt.xlabel("epoch")
+    plot_mnist(hist, args.output)
+
+
+def plot_mnist(hist, output):
+    """한 번의 측정도 확인할 수 있도록 막대그래프로 표시한다."""
+    plt.figure(figsize=(6, 4))
+    if len(hist) == 1:
+        values = [hist[0][key] for key in ("train_acc", "val_acc", "test_acc")]
+        bars = plt.bar(["Train (55,000)", "Validation (5,000)", "Test (10,000)"], values)
+        for bar, value in zip(bars, values):
+            plt.text(bar.get_x()+bar.get_width()/2, value+.01, f"{value:.2%}", ha="center")
+        plt.ylim(0, 1.04)
+        plt.title("MNIST after one epoch")
+    else:
+        for key in ("train_acc", "val_acc", "test_acc"):
+            plt.plot([r["epoch"] for r in hist], [r[key] for r in hist], marker="o", label=key)
+        plt.xlabel("epoch")
+        plt.legend()
     plt.ylabel("accuracy")
-    plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(args.output, "mnist_accuracy.png"))
+    plt.savefig(os.path.join(output, "mnist_accuracy.png"))
     plt.close()
 
 

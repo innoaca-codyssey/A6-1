@@ -1,0 +1,2 @@
+epoch,batch_loss_mean,train_loss,train_acc,val_loss,val_acc,test_loss,test_acc
+1,0.3635001058614332,0.19147901476501547,0.947,0.2242828233973129,0.934,0.19602623969889363,0.9439

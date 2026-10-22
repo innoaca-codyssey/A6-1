@@ -4,11 +4,11 @@ NumPy Tensor와 자동 미분, 레이어와 옵티마이저를 구현합니다. 
 
 ## 실행 환경
 
-미션 전용 격리 환경을 준비합니다. 실제 버전과 측정 결과는 실행한 항목부터 추가합니다.
+Python3.12.14, NumPy2.5.4, Matplotlib3.11.2를 미션 전용 venv에서 사용했습니다. CPU에서 실행했으며 자동 미분/레이어/최적화/배치는 NumPy와 표준 라이브러리로 구현했습니다.
 
 ## 진행 상태
 
-Tensor/AutoGrad/레이어/옵티마이저의 구현과 수치 검증을 진행했습니다. XOR/MNIST 학습과 초기화 비교 실험은 이어서 수행합니다.
+Tensor/AutoGrad의 수치 검증, 초기화별 XOR와 MNIST 학습을 수행했습니다. Dropout/L2 실험을 함께 분석합니다.
 
 ## 엔진 구조
 
@@ -153,3 +153,19 @@ OK
 ```
 
 추가3개 검사는 IDX의 잘못된 헤더/길이/라벨과 정규화, 배치 재현성/누락/마지막 작은 배치를 확인합니다. MNIST 실학습과 정규화 비교 결과는 별도로 기록합니다.
+
+## MNIST 1 Epoch 학습
+
+원본60,000장 중 클래스별500장씩 Validation5,000장을 분리하고 Train55,000장을 한 번 학습했습니다. 공식 Test10,000장은 별도로 평가했습니다. seed42, 784-128-10 ReLU, He 초기화, Adam lr0.001, batch128입니다. 입력은0~1 정규화하며 Tensor 연산과 엔진의 backward로 실제 가중치를 갱신했습니다.
+
+```bash
+python train.py mnist --data data/mnist --epochs 1
+```
+
+```text
+{"epoch": 1, "batch_loss_mean": 0.3635001058614332, "train_loss": 0.19147901476501547, "train_acc": 0.947, "val_loss": 0.2242828233973129, "val_acc": 0.934, "test_loss": 0.19602623969889363, "test_acc": 0.9439}
+```
+
+![MNIST 1회 학습 후 정확도](figures/mnist_accuracy.png)
+
+Test정확도94.39%로1 Epoch80% 기준을 넘었습니다. Validation93.40%/Test94.39%는 서로 다른 분할에서의 측정이며 Validation과 Test를 학습 입력으로 쓰지 않았습니다. 한 번의 학습이므로 Epoch별 추세나 최적 Epoch를 판단하는 자료로 해석하지 않습니다. 평가 Loss는 마지막 작은 배치의 표본 수를 반영해 집계합니다.

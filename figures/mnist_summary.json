@@ -1,0 +1,24 @@
+{
+  "config": {
+    "output": "figures/",
+    "seed": 42,
+    "cmd": "mnist",
+    "data": "../lab/data/mnist",
+    "epochs": 1,
+    "train_limit": 0,
+    "batch": 128,
+    "lr": 0.001
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "batch_loss_mean": 0.3635001058614332,
+      "train_loss": 0.19147901476501547,
+      "train_acc": 0.947,
+      "val_loss": 0.2242828233973129,
+      "val_acc": 0.934,
+      "test_loss": 0.19602623969889363,
+      "test_acc": 0.9439
+    }
+  ]
+}
