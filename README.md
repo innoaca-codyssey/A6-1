@@ -1,0 +1,124 @@
+# 나만의 딥러닝 엔진 만들기
+
+NumPy Tensor와 자동 미분, 레이어와 옵티마이저를 구현합니다. 수치 기울기 검사, XOR/MNIST 학습, 초기화 비교와 Dropout/Weight Decay 및 추가 활성화 함수 실험을 수행합니다.
+
+## 실행 환경
+
+미션 전용 격리 환경을 준비합니다. 실제 버전과 측정 결과는 실행한 항목부터 추가합니다.
+
+## 진행 상태
+
+Tensor/AutoGrad/레이어/옵티마이저의 구현과 수치 검증을 진행했습니다. XOR/MNIST 학습과 초기화 비교 실험은 이어서 수행합니다.
+
+## 엔진 구조
+
+Tensor는 데이터/기울기/생성 연산과 부모를 보관하고, AutoGrad는 위상 순서 역방향으로 연쇄 법칙을 적용합니다. 브로드캐스팅은 원래 shape으로 합산하며 같은 노드로 이어지는 여러 경로의 기울기를 누적합니다. backward는 현재 그래프의 기울기를 초기화하므로 반복 호출이 이전 결과를 중복 누적하지 않습니다. 행렬곱은2차원만 지원하며 그 밖의 입력은 명시적으로 거절합니다.
+
+```text
+$ python gradient_check.py
+add_broadcast[0] max_abs=4.458e-13 rel=1.803e-12
+add_broadcast[1] max_abs=5.979e-13 rel=1.532e-12
+mul_div_pow[0] max_abs=7.837e-13 rel=2.040e-10
+mul_div_pow[1] max_abs=2.140e-12 rel=4.448e-10
+matmul_both[0] max_abs=1.740e-13 rel=2.724e-12
+matmul_both[1] max_abs=1.655e-13 rel=1.374e-12
+reductions_reshape[0] max_abs=2.184e-12 rel=3.276e-12
+exp_log[0] max_abs=1.092e-12 rel=3.276e-12
+linear_layer[0] max_abs=2.243e-13 rel=5.037e-12
+linear_layer[1] max_abs=2.377e-13 rel=5.912e-12
+linear_layer[2] max_abs=2.080e-13 rel=5.601e-13
+relu[0] max_abs=3.098e-13 rel=1.092e-12
+sigmoid[0] max_abs=2.038e-12 rel=1.555e-11
+tanh[0] max_abs=1.110e-11 rel=5.749e-11
+leaky_relu[0] max_abs=3.098e-13 rel=1.092e-12
+elu[0] max_abs=3.098e-13 rel=1.092e-12
+softmax_weighted[0] max_abs=6.260e-12 rel=1.068e-11
+shared_graph[0] max_abs=6.885e-12 rel=6.243e-12
+bce_logits[0] max_abs=3.347e-12 rel=9.373e-12
+categorical_ce[0] max_abs=1.334e-11 rel=2.737e-11
+dropout_fixed_seed[0] max_abs=8.192e-13 rel=3.627e-12
+```
+
+중심차분 epsilon=1e-5로 실제 레이어/연산의21개 미분 성분을 비교했습니다. 각 입력에서 노름 상대 오차가1e-7 미만인지 검사합니다. ReLU의미분 불가능한0 부근은 검산 입력에서 피하고 Dropout은 같은 seed의마스크로 비교했습니다.
+
+## 독립 단위 검사
+
+```text
+$ python -m unittest discover -s tests -v
+add_broadcast[0] max_abs=4.458e-13 rel=1.803e-12
+add_broadcast[1] max_abs=5.979e-13 rel=1.532e-12
+mul_div_pow[0] max_abs=7.837e-13 rel=2.040e-10
+mul_div_pow[1] max_abs=2.140e-12 rel=4.448e-10
+matmul_both[0] max_abs=1.740e-13 rel=2.724e-12
+matmul_both[1] max_abs=1.655e-13 rel=1.374e-12
+reductions_reshape[0] max_abs=2.184e-12 rel=3.276e-12
+exp_log[0] max_abs=1.092e-12 rel=3.276e-12
+linear_layer[0] max_abs=2.243e-13 rel=5.037e-12
+linear_layer[1] max_abs=2.377e-13 rel=5.912e-12
+linear_layer[2] max_abs=2.080e-13 rel=5.601e-13
+relu[0] max_abs=3.098e-13 rel=1.092e-12
+sigmoid[0] max_abs=2.038e-12 rel=1.555e-11
+tanh[0] max_abs=1.110e-11 rel=5.749e-11
+leaky_relu[0] max_abs=3.098e-13 rel=1.092e-12
+elu[0] max_abs=3.098e-13 rel=1.092e-12
+softmax_weighted[0] max_abs=6.260e-12 rel=1.068e-11
+shared_graph[0] max_abs=6.885e-12 rel=6.243e-12
+bce_logits[0] max_abs=3.347e-12 rel=9.373e-12
+categorical_ce[0] max_abs=1.334e-11 rel=2.737e-11
+dropout_fixed_seed[0] max_abs=8.192e-13 rel=3.627e-12
+test_adam_first_two_steps (test_engine.TestEngine.test_adam_first_two_steps)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_add_broadcast_grad (test_engine.TestEngine.test_add_broadcast_grad)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_backward_reset_semantics (test_engine.TestEngine.test_backward_reset_semantics)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_bad_backward_seed_shape (test_engine.TestEngine.test_bad_backward_seed_shape)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_bce_logits_extreme (test_engine.TestEngine.test_bce_logits_extreme)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_deep_graph_without_recursion (test_engine.TestEngine.test_deep_graph_without_recursion)
+긴 그래프도 재귀 제한에 걸리지 않고 미분한다. ... ok
+test_dropout_mean_scaling_and_eval (test_engine.TestEngine.test_dropout_mean_scaling_and_eval)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_elu_extreme_positive_is_not_exponentiated (test_engine.TestEngine.test_elu_extreme_positive_is_not_exponentiated)
+ELU 양수 분기에서 지수 overflow가 발생하지 않는다. ... ok
+test_exp_overflow_raises (test_engine.TestEngine.test_exp_overflow_raises)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_gradient_checker_runs (test_engine.TestEngine.test_gradient_checker_runs)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_initializers_variance (test_engine.TestEngine.test_initializers_variance)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_leakyrelu_elu_grads (test_engine.TestEngine.test_leakyrelu_elu_grads)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_linear_input_weight_bias_grads (test_engine.TestEngine.test_linear_input_weight_bias_grads)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_log_nonpositive_raises (test_engine.TestEngine.test_log_nonpositive_raises)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_log_tiny_positive_exact (test_engine.TestEngine.test_log_tiny_positive_exact)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_matmul_explicit_grad (test_engine.TestEngine.test_matmul_explicit_grad)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_nonfinite_seed_rejected (test_engine.TestEngine.test_nonfinite_seed_rejected)
+비유한 seed를 계산에 전파하지 않는다. ... ok
+test_power_zero_gradient (test_engine.TestEngine.test_power_zero_gradient)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_relu_sigmoid_tanh_values (test_engine.TestEngine.test_relu_sigmoid_tanh_values)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_sequential_train_eval (test_engine.TestEngine.test_sequential_train_eval)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_sgd_coupled_l2 (test_engine.TestEngine.test_sgd_coupled_l2)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_shared_graph_grad (test_engine.TestEngine.test_shared_graph_grad)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_softmax_ce_extreme (test_engine.TestEngine.test_softmax_ce_extreme)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+test_softmax_weighted_grad_formula (test_engine.TestEngine.test_softmax_weighted_grad_formula)
+정의한 수학적 값과 경계 조건을 확인한다. ... ok
+
+----------------------------------------------------------------------
+Ran 24 tests in 0.217s
+
+OK
+```
+
+log의 작은 양수, exp의 범위 초과, 0지수, 극단 로짓의 손실, 공유 그래프, 긴 그래프와 Dropout 평가 모드를 확인했습니다. 아직 학습 성공 결과를 대신하는 검사는 아닙니다.
