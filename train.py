@@ -259,7 +259,7 @@ def plot_mnist(hist, output):
     if len(hist) == 1:
         values = [hist[0][key] for key in ("train_acc", "val_acc", "test_acc")]
         bars = plt.bar(
-            ["Train (55,000)", "Validation (5,000)", "Test (10,000)"], values
+            ["Train", "Validation", "Test"], values
         )
         for bar, value in zip(bars, values):
             plt.text(
