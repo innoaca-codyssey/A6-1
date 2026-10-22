@@ -258,14 +258,26 @@ def plot_mnist(hist, output):
     plt.figure(figsize=(6, 4))
     if len(hist) == 1:
         values = [hist[0][key] for key in ("train_acc", "val_acc", "test_acc")]
-        bars = plt.bar(["Train (55,000)", "Validation (5,000)", "Test (10,000)"], values)
+        bars = plt.bar(
+            ["Train (55,000)", "Validation (5,000)", "Test (10,000)"], values
+        )
         for bar, value in zip(bars, values):
-            plt.text(bar.get_x()+bar.get_width()/2, value+.01, f"{value:.2%}", ha="center")
+            plt.text(
+                bar.get_x() + bar.get_width() / 2,
+                value + 0.01,
+                f"{value:.2%}",
+                ha="center",
+            )
         plt.ylim(0, 1.04)
         plt.title("MNIST after one epoch")
     else:
         for key in ("train_acc", "val_acc", "test_acc"):
-            plt.plot([r["epoch"] for r in hist], [r[key] for r in hist], marker="o", label=key)
+            plt.plot(
+                [r["epoch"] for r in hist],
+                [r[key] for r in hist],
+                marker="o",
+                label=key,
+            )
         plt.xlabel("epoch")
         plt.legend()
     plt.ylabel("accuracy")
@@ -374,6 +386,9 @@ def cmd_regularization(args):
         args.batch,
         args.seed,
     )
+    for model, history in ((base, base_hist), (reg, reg_hist)):
+        loss, accuracy = evaluate_binary(model, xtr, ytrue, args.batch)
+        history[-1].update(clean_train_loss=loss, clean_train_acc=accuracy)
     hist = base_hist + reg_hist
     save_csv(
         os.path.join(args.output, "regularization_history.csv"),

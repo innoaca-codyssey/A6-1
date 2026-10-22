@@ -169,3 +169,54 @@ python train.py mnist --data data/mnist --epochs 1
 ![MNIST 1회 학습 후 정확도](figures/mnist_accuracy.png)
 
 Test정확도94.39%로1 Epoch80% 기준을 넘었습니다. Validation93.40%/Test94.39%는 서로 다른 분할에서의 측정이며 Validation과 Test를 학습 입력으로 쓰지 않았습니다. 한 번의 학습이므로 Epoch별 추세나 최적 Epoch를 판단하는 자료로 해석하지 않습니다. 평가 Loss는 마지막 작은 배치의 표본 수를 반영해 집계합니다.
+
+## Dropout과 L2의 과대적합 억제
+
+두 반달을 NumPy로 만들고 Train120/Validation500/Test500으로 각각 분리했습니다. 표준편차0.12의 위치 노이즈와 Train정답24개(20%)의 반전을 seed42로 고정했습니다. 동일한2-64-64-1 Tanh 구조와 같은 초기 가중치를 사용하고, baseline과 Dropout0.2+L2계수0.001을 Adam lr0.01/batch64로800회 비교했습니다. Test는 마지막에만 평가했습니다.
+
+```bash
+python train.py regularization
+```
+
+| 측정 | 기본 모델 | Dropout + L2 |
+|---|---:|---:|
+| 오염 Train정답 정확도 | 98.33% | 81.67% |
+| 깨끗한 Train정답 정확도 | 81.67% | 96.67% |
+| Validation정확도 | 83.00% | 93.80% |
+| Test정확도 | 81.20% | 95.00% |
+| Validation Loss | 0.678698 | 0.270957 |
+| Test Loss | 0.712082 | 0.258442 |
+| 가중치/편향 전체 L2 norm | 49.689 | 9.861 |
+
+![과대적합 억제 비교](figures/regularization_loss.png)
+
+기본 모델은 오염 정답에98.33%까지 맞추면서 Validation Loss가0.678698로 증가했습니다. Dropout/L2 모델은 깨끗한 Train정답96.67%, Test95.00%였고 가중치 norm도49.689에서9.861로 감소했습니다. Train과 Validation의 정답 오염 조건이 달라 두 Loss의 단순 차이를 순수한 일반화 격차로 해석하지 않습니다. 이 실험은 두 기법의 결합 효과이며 각각의 독립 효과나 모든 데이터의 개선을 보장하지 않습니다.
+
+Dropout은 학습 시 마스크를1/(1-p)배하고 평가 시 항등 연산으로 바뀝니다. L2는 SGD/Adam의 기울기에 lambda*w를 더하며 여기서는 편향도 포함합니다. AdamW의 분리된 weight decay는 구현하지 않았습니다. Tanh/LeakyReLU/ELU의 역전파는 수치 검사에 포함했고, 실험에서는 Tanh를 사용했습니다.
+
+## 설치와 사용
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python gradient_check.py
+python -m unittest discover -s tests -v
+python train.py xor --include-xavier
+python train.py mnist --data data/mnist
+python train.py regularization
+```
+
+```python
+from engine import Tensor
+x = Tensor([[1., 2.]])
+w = Tensor([[3.], [4.]])
+y = (x @ w).sum()
+y.backward()
+print(y.data, x.grad, w.grad)
+# 11.0, [[3. 4.]], [[1.], [2.]]
+```
+
+`engine/tensor.py`가 연산 그래프를 만들고 `engine/autograd.py`가 미분 순서를 관리합니다. `engine/layers.py`는 Tensor를 조합하고 `engine/optim.py`는 파라미터의 grad를 사용해 갱신합니다. `engine/data.py`는 네트워크 다운로드와 직접 파싱/배치를 담당하며 `train.py`가 이 모듈들을 연결합니다. 실행 결과의 원시 수치는 `figures/*_history.csv`와 `*_summary.json`에 있습니다.
+
+기울기는float64이며 GPU, 합성곱, 임의 차원 batched matmul, 자동 no_grad 모드는 지원하지 않습니다. 저장한 출력으로 수치 검증과 학습 성공을 확인했으며 범용 프레임워크의 기능 전체를 구현한 것은 아닙니다.

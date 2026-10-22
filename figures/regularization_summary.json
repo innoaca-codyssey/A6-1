@@ -1,0 +1,40 @@
+{
+  "generator": {
+    "train": 120,
+    "validation": 500,
+    "test": 500,
+    "noise": 0.12,
+    "seed": 42
+  },
+  "flipcount": 24,
+  "final": {
+    "baseline": {
+      "variant": "baseline",
+      "epoch": 800,
+      "train_loss": 0.062159438434134066,
+      "train_acc": 0.9833333333333333,
+      "val_loss": 0.6786979883709046,
+      "val_acc": 0.83,
+      "weight_norm": 49.68926420530981,
+      "test_loss": 0.7120823542185063,
+      "test_acc": 0.812,
+      "clean_train_loss": 0.7436448199254442,
+      "clean_train_acc": 0.8166666666666667
+    },
+    "dropout_l2": {
+      "variant": "dropout_l2",
+      "epoch": 800,
+      "train_loss": 0.44934791171543276,
+      "train_acc": 0.8166666666666667,
+      "val_loss": 0.2709566205904576,
+      "val_acc": 0.938,
+      "weight_norm": 9.86086567083068,
+      "test_loss": 0.25844197716734807,
+      "test_acc": 0.95,
+      "clean_train_loss": 0.25263274828945803,
+      "clean_train_acc": 0.9666666666666667
+    },
+    "baseline_gap": 0.6165385499367705,
+    "dropout_l2_gap": -0.17839129112497515
+  }
+}
